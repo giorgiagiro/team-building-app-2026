@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext'
 
 const getInitialForm = () => ({
   name: '',
+  replyEmail: '',
   attending: 'si',
   diet: '',
   carOption: 'passenger',
@@ -30,6 +31,7 @@ export default function RegistrationForm() {
     if (current) {
       setFormData({
         name: current.name || '',
+        replyEmail: current.replyEmail || '',
         attending: current.attending || 'si',
         diet: current.diet && current.diet !== 'Nessuna' ? current.diet : '',
         carOption: current.carOption || 'passenger',
@@ -95,7 +97,20 @@ export default function RegistrationForm() {
             Sei già registrato come <strong>{registeredName}</strong>. Puoi aggiornare i tuoi dati qui sotto.
           </span>
         </div>
-      )}
+)}
+        <div>
+          <label className="block text-xs font-semibold text-slate-400 mb-1">
+            Email (per eventuali reply)
+          </label>
+          <input
+            type="email"
+            placeholder="es. mario@esempio.com"
+            value={formData.replyEmail}
+            onChange={e => handleField('replyEmail', e.target.value)}
+            className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+      
 
       <form
         onSubmit={handleSubmit}

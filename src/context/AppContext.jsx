@@ -383,6 +383,50 @@ export function AppProvider({ children }) {
     }
   }
 
+  const uploadOptionPdf = async (file, index, onProgress) => {
+    if (!file) throw new Error('Nessun file fornito')
+    if (!storage) throw new Error('Firebase Storage non configurato')
+    try {
+      const path = `artifacts/${APP_ID}/public/assets/options_pdfs/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
+      const ref = storageRef(storage, path)
+      const uploadTask = uploadBytesResumable(ref, file)
+      return await new Promise((resolve, reject) => {
+        uploadTask.on('state_changed', (snapshot) => {
+          const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
+          if (onProgress) onProgress(pct)
+        }, (err) => {
+          console.error('Upload error', err)
+          reject(err)
+        }, async () => {
+          try {
+            const url = await getDownloadURL(uploadTask.snapshot.ref)
+            const updated = options.map((o, i) => i === index ? { ...o, pdf: url } : o)
+            setOptions(updated)
+            await syncSettings({ options: JSON.parse(JSON.stringify(updated)) })
+            resolve(url)
+          } catch (e) { reject(e) }
+        })
+      })
+    } catch (err) {
+      console.error('Errore upload PDF opzione', err)
+      throw err
+    }
+  }
+
+  const deleteOptionPdf = async (url) => {
+    if (!url) return
+    try {
+      const decode = decodeURIComponent(url)
+      const parts = decode.split('/o/')
+      if (parts.length < 2) return
+      const fullPath = parts[1].split('?')[0]
+      const ref = storageRef(storage, fullPath)
+      await deleteObject(ref)
+    } catch (err) {
+      console.warn('Eliminazione PDF fallita o non disponibile:', err)
+    }
+  }
+
   const addNewOption = async () => {
     const char = String.fromCharCode(65 + options.length)
     const newOpt = {
@@ -472,6 +516,7 @@ export function AppProvider({ children }) {
   const saveRsvpProcess = async (formData, targetId) => {
     const dataToSave = {
         name: formData.name.trim(),
+      replyEmail: formData.replyEmail || '',
         attending: formData.attending,
         diet: formData.attending === 'si' ? (formData.diet || 'Nessuna') : 'Nessuna',
         carOption: formData.attending === 'si' ? formData.carOption : 'autonomous',
@@ -636,9 +681,10 @@ export function AppProvider({ children }) {
 
     // ── Foglio 1: Adesioni ──
     xml += `<Worksheet ss:Name="Generale Adesioni"><Table>`
-    xml += `<Row ss:Height="25"><Cell ss:StyleID="Title" ss:MergeAcross="5"><Data ss:Type="String">REPORT GENERALI ADESIONI - TEAM BUILDING 2026</Data></Cell></Row>`
+    xml += `<Row ss:Height="25"><Cell ss:StyleID="Title" ss:MergeAcross="6"><Data ss:Type="String">REPORT GENERALI ADESIONI - TEAM BUILDING 2026</Data></Cell></Row>`
     xml += `<Row ss:Height="20">`
     xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">Nome Partecipante</Data></Cell>`
+    xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">Email</Data></Cell>`
     xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">Presenza</Data></Cell>`
     xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">Preferenze Cibo</Data></Cell>`
     xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">Scelta Trasporto</Data></Cell>`
@@ -649,6 +695,7 @@ export function AppProvider({ children }) {
       const transport = r.carOption === 'driver' ? 'Offre Passaggi' : r.carOption === 'passenger' ? 'Cerca Passaggio' : 'Spostamento Autonomo'
       xml += `<Row>`
       xml += `<Cell><Data ss:Type="String">${escapeXml(r.name)}</Data></Cell>`
+      xml += `<Cell><Data ss:Type="String">${escapeXml(r.replyEmail || '')}</Data></Cell>`
       xml += `<Cell><Data ss:Type="String">${escapeXml(r.attending?.toUpperCase())}</Data></Cell>`
       xml += `<Cell><Data ss:Type="String">${escapeXml(r.diet || 'Nessuna')}</Data></Cell>`
       xml += `<Cell><Data ss:Type="String">${transport}</Data></Cell>`
@@ -758,7 +805,7 @@ export function AppProvider({ children }) {
 
       // Export
       exportToExcel,
-      uploadOptionImage, deleteOptionImage,
+      uploadOptionImage, deleteOptionImage, uploadOptionPdf, deleteOptionPdf,
 
       // Util
       showNotification,

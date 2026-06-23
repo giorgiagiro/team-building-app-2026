@@ -186,7 +186,8 @@ export default function CarpoolingView() {
                     </div>
 
                     {/* Assegna passeggero (solo manager non bloccato) */}
-                    {!isLocked && !isFull && unassigned.length > 0 && (
+                    {/*!isLocked && !isFull && unassigned.length > 0 && (*/}
+                    {!isFull && unassigned.length > 0 && (
                       <div className="border-t border-slate-800 pt-3">
                         <p className="text-xs text-slate-500 font-bold uppercase mb-1.5">Assegna passeggero</p>
                         <div className="flex gap-2">

@@ -32,8 +32,12 @@ export default function WinnerReveal() {
       <div className="flex flex-wrap justify-center gap-3 text-xs font-bold">
         <span className="bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-slate-300">💪 {winner.physicalLevel}</span>
         <span className="bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-slate-300">🍻 {winner.alcoholVibe}</span>
-        <span className="bg-indigo-900/50 border border-indigo-800 px-4 py-2 rounded-xl text-indigo-300">💶 ~€{winner.budget}/persona</span>
       </div>
+      {winner.pdf && (
+        <div className="mt-4">
+          <a href={winner.pdf} target="_blank" rel="noreferrer" className="inline-block text-xs font-semibold text-indigo-300 underline">📎 Apri preventivo (PDF)</a>
+        </div>
+      )}
     </div>
   )
 }

@@ -21,7 +21,7 @@ export default function ManagerView() {
     exportToExcel,
     reportTab, setReportTab,
     assignPassenger, unassignPassenger, setCurrentSlide, isCloudEnabled
-    , uploadOptionImage
+    , uploadOptionImage, uploadOptionPdf, deleteOptionPdf
   } = useApp()
 
   // Struttura slide:
@@ -89,6 +89,8 @@ export default function ManagerView() {
   const OptionSlide = ({ opt, index }) => {
     const [uploadProgress, setUploadProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false)
+    const [pdfUploadProgress, setPdfUploadProgress] = useState(0)
+    const [isPdfUploading, setIsPdfUploading] = useState(false)
     const isWinner = index === parseInt(selectedWinnerIndex)
     return (
       <div className="space-y-6 slide-enter">
@@ -168,6 +170,49 @@ export default function ManagerView() {
                   {isUploading && (
                     <div className="w-full bg-slate-800 rounded-full h-2.5 mt-2">
                       <div className="h-2.5 rounded-full bg-indigo-600 transition-all" style={{ width: `${uploadProgress}%` }} />
+                    </div>
+                  )}
+                </div>
+                {/* PDF upload (preventivo) */}
+                <div className="mt-4">
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Preventivo (PDF) — opzionale</label>
+                  {opt.pdf ? (
+                    <div className="flex items-center gap-3">
+                      <a href={opt.pdf} target="_blank" rel="noreferrer" className="text-xs text-indigo-300 underline">Apri PDF preventivo</a>
+                      <button
+                        onClick={async () => {
+                          // elimina riferimento e (opzionale) cancella dal storage
+                          updateOption(index, 'pdf', '')
+                          if (opt.pdf) await deleteOptionPdf(opt.pdf)
+                        }}
+                        className="text-rose-400 text-xs hover:text-rose-300"
+                      >Rimuovi</button>
+                    </div>
+                  ) : (
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      disabled={isPdfUploading}
+                      onChange={async (e) => {
+                        const f = e.target.files && e.target.files[0]
+                        if (!f) return
+                        try {
+                          setIsPdfUploading(true)
+                          await uploadOptionPdf(f, index, (pct) => setPdfUploadProgress(pct))
+                          setIsPdfUploading(false)
+                          setPdfUploadProgress(0)
+                        } catch (err) {
+                          setIsPdfUploading(false)
+                          setPdfUploadProgress(0)
+                          console.error('Upload PDF failed', err)
+                        }
+                      }}
+                      className="w-full text-xs text-slate-400"
+                    />
+                  )}
+                  {isPdfUploading && (
+                    <div className="w-full bg-slate-800 rounded-full h-2.5 mt-2">
+                      <div className="h-2.5 rounded-full bg-indigo-600 transition-all" style={{ width: `${pdfUploadProgress}%` }} />
                     </div>
                   )}
                 </div>
