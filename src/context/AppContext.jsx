@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { db, auth, APP_ID } from '../firebase/config'
 import {
@@ -369,13 +370,13 @@ export function AppProvider({ children }) {
   // ─────────────────────────────────────────────
   // RSVP — HELPERS
   // ─────────────────────────────────────────────
-  const clearLocalSession = useCallback(() => {
+  function clearLocalSession() {
     setRegisteredRsvpId('')
     setRegisteredName('')
     localStorage.removeItem('tb_registered_rsvp_id')
     localStorage.removeItem('tb_registered_name')
     setNewRsvp({ name: '', attending: 'si', diet: '', carOption: 'passenger', carSeats: 4, notes: '' })
-  }, [])
+  }
 
   const updateRsvpInCloud = async (rsvp) => {
     if (!isCloudEnabled || !rsvp.id) return
@@ -716,3 +717,5 @@ export function AppProvider({ children }) {
 }
 
 export const useApp = () => useContext(AppContext)
+
+        

@@ -1,35 +1,37 @@
+// src/components/shared/SlideNav.jsx
 import { useApp } from '../../context/AppContext'
 
 export default function SlideNav() {
-  const { currentSlide, totalSlides, nextSlide, prevSlide } = useApp()
-
+  const { currentSlide, setCurrentSlide, totalSlides } = useApp()
   return (
-    <div className="flex items-center justify-between mt-8 pt-4 border-t border-slate-800">
-      <button
-        onClick={prevSlide}
-        disabled={currentSlide === 0}
-        className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-semibold transition-all flex items-center gap-2"
-      >
-        <i className="fa-solid fa-arrow-left" /> Precedente
-      </button>
-
-      {/* Dots */}
-      <div className="flex gap-2">
+    <div className="flex items-center justify-between pt-6 border-t border-slate-900 mt-8">
+      <div className="flex space-x-2">
         {Array.from({ length: totalSlides }).map((_, i) => (
-          <span
+          <button
             key={i}
-            className={`w-2 h-2 rounded-full transition-all ${i === currentSlide ? 'bg-indigo-500 w-4' : 'bg-slate-700'}`}
+            onClick={() => setCurrentSlide(i)}
+            className={`h-2 rounded-full transition-all ${
+              currentSlide === i ? 'w-8 bg-indigo-500' : 'w-2 bg-slate-800 hover:bg-slate-700'
+            }`}
           />
         ))}
       </div>
-
-      <button
-        onClick={nextSlide}
-        disabled={currentSlide === totalSlides - 1}
-        className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-semibold transition-all flex items-center gap-2"
-      >
-        Successivo <i className="fa-solid fa-arrow-right" />
-      </button>
+      <div className="flex space-x-3">
+        <button
+          onClick={() => setCurrentSlide(s => Math.max(0, s - 1))}
+          disabled={currentSlide === 0}
+          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-30 text-slate-300 font-bold rounded-lg text-sm transition-all"
+        >
+          ← Indietro
+        </button>
+        <button
+          onClick={() => setCurrentSlide(s => Math.min(totalSlides - 1, s + 1))}
+          disabled={currentSlide === totalSlides - 1}
+          className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 text-white font-bold rounded-lg text-sm transition-all"
+        >
+          Avanti →
+        </button>
+      </div>
     </div>
   )
 }
