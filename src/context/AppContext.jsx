@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { db, auth, APP_ID } from '../firebase/config'
 import {
-  signInAnonymously,
   collection,
   query,
   onSnapshot,
@@ -11,6 +10,7 @@ import {
   updateDoc,
   deleteDoc,
 } from 'firebase/firestore'
+import { signInAnonymously } from 'firebase/auth'
 
 // ─────────────────────────────────────────────
 // DATI DI DEFAULT (usati se il Cloud non è disponibile)
