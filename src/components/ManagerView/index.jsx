@@ -31,6 +31,7 @@ export default function ManagerView() {
   const introSlide   = 0
   const compareSlide = options.length + 1
   const reportSlide  = options.length + 2
+  const lastOptionSlide = options.length
 
 
    // ── Slide 0: Benvenuto Manager ────────────────────────────────
