@@ -7,7 +7,7 @@ const getInitialForm = () => ({
   attending: 'si',
   diet: '',
   carOption: 'passenger',
-  carSeats: 0,
+  carSeats: 1,
   notes: '',
 })
 
@@ -35,7 +35,11 @@ export default function RegistrationForm({ onSubmitted } = {}) {
         attending: current.attending || 'si',
         diet: current.diet && current.diet !== 'Nessuna' ? current.diet : '',
         carOption: current.carOption || 'passenger',
-        carSeats: current.carSeats || 0,
+        carSeats: (() => {
+          const cs = parseInt(current.carSeats, 10)
+          if (!Number.isNaN(cs) && cs > 0) return Math.max(1, Math.min(5, cs))
+          return current.carOption === 'driver' ? 1 : 0
+        })(),
         notes: current.notes || '',
       })
     } else {
@@ -202,9 +206,14 @@ export default function RegistrationForm({ onSubmitted } = {}) {
                   <input
                     type="number"
                     min="1"
-                    max="8"
+                    max="5"
                     value={formData.carSeats}
-                    onChange={e => handleField('carSeats', parseInt(e.target.value, 10) || 1)}
+                    onChange={e => {
+                      let v = parseInt(e.target.value, 10)
+                      if (Number.isNaN(v)) v = 1
+                      v = Math.max(1, Math.min(5, v))
+                      handleField('carSeats', v)
+                    }}
                     className="w-16 bg-slate-900 border border-slate-700 rounded p-1 text-center text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>

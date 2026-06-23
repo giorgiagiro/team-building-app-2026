@@ -522,8 +522,8 @@ export function AppProvider({ children }) {
         carOption: formData.attending === 'si' ? formData.carOption : 'autonomous',
         carSeats:
         formData.attending === 'si' && formData.carOption === 'driver'
-            ? parseInt(formData.carSeats, 10) || 0
-            : 0,
+          ? (Math.max(1, Math.min(5, parseInt(formData.carSeats, 10) || 1)))
+          : 0,
         notes: formData.notes || '',
         createdAt: new Date().toISOString(),
     }
