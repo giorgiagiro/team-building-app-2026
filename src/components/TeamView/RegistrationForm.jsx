@@ -11,7 +11,7 @@ const getInitialForm = () => ({
   notes: '',
 })
 
-export default function RegistrationForm() {
+export default function RegistrationForm({ onSubmitted } = {}) {
   const {
     submitRsvp,
     registeredName,
@@ -59,6 +59,7 @@ export default function RegistrationForm() {
     e.preventDefault()
     e.stopPropagation()
     await submitRsvp(formData)
+    if (onSubmitted) onSubmitted()
   }
 
   return (

@@ -1,6 +1,8 @@
 // Vista dedicata carpooling (accessibile a tutti, anche con isLocked)
 
 import { useApp } from '../../context/AppContext'
+import { useState } from 'react'
+import RegistrationForm from '../TeamView/RegistrationForm'
 
 export default function CarpoolingView() {
   const {
@@ -16,6 +18,9 @@ export default function CarpoolingView() {
     getCurrentUserRsvp,
     registeredName,
     exportToExcel,
+    setViewMode,
+    setCurrentSlide,
+    showNotification,
   } = useApp()
 
   const drivers    = getDrivers()
@@ -26,6 +31,7 @@ export default function CarpoolingView() {
   const pct        = total > 0 ? Math.min(100, Math.round(assigned / total * 100)) : 0
 
   const currentUser = getCurrentUserRsvp()
+  const [showRegisterModal, setShowRegisterModal] = useState(false)
 
   const handleAssign = (driverId, driverName) => {
     const sel = document.getElementById(`sel-${driverId}`)
@@ -208,8 +214,8 @@ export default function CarpoolingView() {
                       </div>
                     )}
 
-                    {/* Bottone self-service passeggero (vista team bloccata) */}
-                    {isLocked && registeredRsvpId && currentUser?.carOption === 'passenger' && (
+                    {/* Bottone self-service passeggero (mostra sempre per l'utente registrato passeggero) */}
+                    {registeredRsvpId && currentUser?.carOption === 'passenger' && (
                       <div className="pt-1">
                         {canBoard && (
                           <button
@@ -229,10 +235,21 @@ export default function CarpoolingView() {
                           </button>
                         )}
                         {alreadyElsewhere && !isFull && (
-                          <button disabled className="w-full py-1.5 bg-slate-800 text-slate-600 font-bold text-xs rounded-lg cursor-not-allowed">
-                            Già prenotato altrove
-                          </button>
+                          <div>
+                            <button disabled className="w-full py-1.5 bg-slate-800 text-slate-600 font-bold text-xs rounded-lg cursor-not-allowed">
+                              Già prenotato altrove
+                            </button>
+                            <p className="text-xs text-slate-500 mt-2">Hai già una prenotazione su un'altra auto. Per salire su questa, rimuovi prima la tua prenotazione precedente.</p>
+                          </div>
                         )}
+                      </div>
+                    )}
+                    {!registeredRsvpId && (
+                      <div className="pt-2">
+                        <button
+                          onClick={() => setShowRegisterModal(true)}
+                          className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg transition-all"
+                        >Registrati per salire</button>
                       </div>
                     )}
                   </div>
@@ -240,6 +257,25 @@ export default function CarpoolingView() {
               })}
             </div>
           </div>
+
+          {showRegisterModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setShowRegisterModal(false)}>
+              <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl animate-fade-in" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-extrabold text-white">Registrati</h3>
+                  <button onClick={() => setShowRegisterModal(false)} className="text-slate-400 hover:text-white text-xs">Chiudi ✕</button>
+                </div>
+                <RegistrationForm onSubmitted={() => {
+                  showNotification('Grazie! Registrazione effettuata.', 'success')
+                  setTimeout(() => {
+                    setShowRegisterModal(false)
+                    setViewMode('team')
+                    setCurrentSlide(2)
+                  }, 1400)
+                }} />
+              </div>
+            </div>
+          )}
 
           {/* ── In attesa + Autonomi ────────────────────────────── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
