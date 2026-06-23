@@ -626,7 +626,7 @@ export default function ManagerView() {
 
   return (
     <div className="max-w-5xl w-full">
-      <div className="bg-slate-950/60 border border-slate-800 rounded-3xl p-6 md:p-12 shadow-2xl min-h-[550px] flex flex-col justify-between slide-enter">
+      <div className="bg-slate-950/60 border border-slate-800 rounded-3xl p-4 md:p-12 shadow-2xl md:min-h-[550px] flex flex-col justify-between slide-enter">
         <div className="flex-grow">{renderSlide()}</div>
         <SlideNav />
       </div>

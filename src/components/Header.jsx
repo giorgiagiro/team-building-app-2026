@@ -29,10 +29,10 @@ export default function Header() {
         {/* Nav centrale */}
         <nav className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
           {[
-            { id: 'manager',    label: '⚙️ Manager',    locked: isLocked },
-            { id: 'team',       label: '👥 Team',       locked: false    },
-            { id: 'carpooling', label: '🚗 Carpooling', locked: false    },
-          ].map(({ id, label, locked }) => (
+            { id: 'manager',    icon: '⚙️', label: 'Manager',    locked: isLocked },
+            { id: 'team',       icon: '👥', label: 'Team',       locked: false    },
+            { id: 'carpooling', icon: '🚗', label: 'Carpooling', locked: false    },
+          ].map(({ id, icon, label, locked }) => (
             <button
               key={id}
               onClick={() => setViewMode(id)}
@@ -43,7 +43,8 @@ export default function Header() {
                 }`}
             >
               {locked && <span className="text-amber-400">🔒</span>}
-              {label}
+              <span className="text-sm">{icon}</span>
+              <span className="hidden sm:inline"> {label}</span>
             </button>
           ))}
         </nav>
