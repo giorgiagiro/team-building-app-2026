@@ -7,6 +7,12 @@ export default function WinnerReveal() {
 
   return (
     <div className="text-center space-y-6">
+      {/* Winner image */}
+      {winner.image && (
+        <div className="w-full max-w-3xl mx-auto">
+          <img src={winner.image} alt={winner.title} className="w-full h-56 md:h-96 object-cover rounded-2xl border border-slate-800" />
+        </div>
+      )}
       <div>
         <span className="text-xs uppercase font-extrabold tracking-widest text-amber-400">🏆 La Scelta del Team</span>
         <h2 className="text-4xl font-extrabold text-white mt-3">{winner.title}</h2>

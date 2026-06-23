@@ -1,4 +1,5 @@
 import { useApp } from '../../context/AppContext'
+import { useState } from 'react'
 import SlideNav from '../shared/SlideNav'
 
 export default function ManagerView() {
@@ -20,6 +21,7 @@ export default function ManagerView() {
     exportToExcel,
     reportTab, setReportTab,
     assignPassenger, unassignPassenger, setCurrentSlide, isCloudEnabled
+    , uploadOptionImage
   } = useApp()
 
   // Struttura slide:
@@ -85,11 +87,19 @@ export default function ManagerView() {
 
   // ── Slide Opzione ──────────────────────────────────────────────
   const OptionSlide = ({ opt, index }) => {
+    const [uploadProgress, setUploadProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false)
     const isWinner = index === parseInt(selectedWinnerIndex)
     return (
       <div className="space-y-6 slide-enter">
         {/* Badge + titolo */}
         <div>
+          {/* Image preview (display only) */}
+          {opt.image && !editMode && (
+            <div className="mb-4">
+              <img src={opt.image} alt={`${opt.title} immagine`} className="w-full h-48 md:h-72 object-cover rounded-xl border border-slate-800" />
+            </div>
+          )}
           <div className="flex items-start justify-between flex-wrap gap-2 mb-3">
             <span className={`text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border ${opt.badgeColor}`}>
               Opzione {String.fromCharCode(65 + index)}{isWinner ? ' 🏆 Vincitrice' : ''}
@@ -116,6 +126,52 @@ export default function ManagerView() {
                 value={opt.tagline}
                 onChange={e => updateOption(index, 'tagline', e.target.value)}
               />
+              {/* Image URL field */}
+              <div className="mt-4">
+                <label className="block text-xs font-semibold text-slate-400 mb-1">URL Immagine (opzionale)</label>
+                <input
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  placeholder="https://example.com/image.jpg"
+                  value={opt.image || ''}
+                  onChange={e => updateOption(index, 'image', e.target.value)}
+                />
+                {opt.image && (
+                  <div className="mt-3">
+                    <img src={opt.image} alt="Anteprima" className="w-full h-40 object-cover rounded-lg border border-slate-800" />
+                  </div>
+                )}
+
+                {/* File upload */}
+                <div className="mt-3">
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Oppure carica un file</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={isUploading}
+                    onChange={async (e) => {
+                      const f = e.target.files && e.target.files[0]
+                      if (!f) return
+                      try {
+                        setIsUploading(true)
+                        await uploadOptionImage(f, index, (pct) => setUploadProgress(pct))
+                        setIsUploading(false)
+                        setUploadProgress(0)
+                        // notification handled by upload function via save
+                      } catch (err) {
+                        setIsUploading(false)
+                        setUploadProgress(0)
+                        console.error('Upload failed', err)
+                      }
+                    }}
+                    className="w-full text-xs text-slate-400"
+                  />
+                  {isUploading && (
+                    <div className="w-full bg-slate-800 rounded-full h-2.5 mt-2">
+                      <div className="h-2.5 rounded-full bg-indigo-600 transition-all" style={{ width: `${uploadProgress}%` }} />
+                    </div>
+                  )}
+                </div>
+              </div>
             </>
           ) : (
             <>

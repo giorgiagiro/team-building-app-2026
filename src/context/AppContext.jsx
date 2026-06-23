@@ -11,7 +11,9 @@ import {
   updateDoc,
   deleteDoc,
 } from 'firebase/firestore'
+import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage'
 import { signInAnonymously } from 'firebase/auth'
+import { storage } from '../firebase/config'
 
 // ─────────────────────────────────────────────
 // DATI DI DEFAULT (usati se il Cloud non è disponibile)
@@ -330,6 +332,55 @@ export function AppProvider({ children }) {
   const saveOptions = async () => {
     await syncSettings({ options: JSON.parse(JSON.stringify(options)) })
     showNotification('Modifiche salvate nel Cloud!', 'success')
+  }
+
+  // ─────────────────────────────────────────────
+  // Storage: upload / delete immagini per le opzioni
+  // ─────────────────────────────────────────────
+  const uploadOptionImage = async (file, index, onProgress) => {
+    if (!file) throw new Error('Nessun file fornito')
+    if (!storage) throw new Error('Firebase Storage non configurato')
+    try {
+      const path = `artifacts/${APP_ID}/public/assets/options/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
+      const ref = storageRef(storage, path)
+      const uploadTask = uploadBytesResumable(ref, file)
+      return await new Promise((resolve, reject) => {
+        uploadTask.on('state_changed', (snapshot) => {
+          const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
+          if (onProgress) onProgress(pct)
+        }, (err) => {
+          console.error('Upload error', err)
+          reject(err)
+        }, async () => {
+          try {
+            const url = await getDownloadURL(uploadTask.snapshot.ref)
+            // aggiorna lo state e salva esplicitamente la versione aggiornata
+            const updated = options.map((o, i) => i === index ? { ...o, image: url } : o)
+            setOptions(updated)
+            await syncSettings({ options: JSON.parse(JSON.stringify(updated)) })
+            resolve(url)
+          } catch (e) { reject(e) }
+        })
+      })
+    } catch (err) {
+      console.error('Errore upload immagine opzione', err)
+      throw err
+    }
+  }
+
+  const deleteOptionImage = async (url) => {
+    if (!url) return
+    try {
+      // attempt to derive ref from URL (works for same bucket)
+      const decode = decodeURIComponent(url)
+      const parts = decode.split('/o/')
+      if (parts.length < 2) return
+      const fullPath = parts[1].split('?')[0]
+      const ref = storageRef(storage, fullPath)
+      await deleteObject(ref)
+    } catch (err) {
+      console.warn('Eliminazione immagine fallita o non disponibile:', err)
+    }
   }
 
   const addNewOption = async () => {
@@ -707,6 +758,7 @@ export function AppProvider({ children }) {
 
       // Export
       exportToExcel,
+      uploadOptionImage, deleteOptionImage,
 
       // Util
       showNotification,
