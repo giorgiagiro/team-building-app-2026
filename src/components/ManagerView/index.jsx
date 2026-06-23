@@ -19,18 +19,68 @@ export default function ManagerView() {
     totalCarSeatsOffered,
     exportToExcel,
     reportTab, setReportTab,
-    assignPassenger, unassignPassenger,
+    assignPassenger, unassignPassenger, setCurrentSlide, isCloudEnabled
   } = useApp()
 
-  // Struttura slide identica all'HTML originale:
-  // slide 0..N-1 = opzioni
-  // slide N      = confronto
-  // slide N+1    = report/adesioni
-  // slide N+2    = carpooling manager
-  const lastOptionSlide = options.length - 1
-  const compareSlide    = options.length
-  const reportSlide     = options.length + 1
-  const carpoolSlide    = options.length + 2
+  // Struttura slide:
+  // 0          = intro/benvenuto
+  // 1..N       = una slide per opzione
+  // N+1        = confronto comparativo
+  // N+2        = report adesioni
+
+  const introSlide   = 0
+  const compareSlide = options.length + 1
+  const reportSlide  = options.length + 2
+
+
+   // ── Slide 0: Benvenuto Manager ────────────────────────────────
+  const IntroSlide = () => (
+    <div className="space-y-6 slide-enter">
+      <div className="flex items-center space-x-2 text-indigo-400">
+        <span className="h-1 w-8 bg-indigo-500 rounded-full" />
+        <span className="text-xs uppercase font-extrabold tracking-widest">Presentazione Decisionale</span>
+      </div>
+
+      <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
+        Team Building{' '}
+        <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-rose-400 bg-clip-text text-transparent">
+          Autunno 2026
+        </span>
+      </h2>
+
+      <p className="text-lg text-slate-300 leading-relaxed max-w-3xl">
+        Benvenuto nel pannello decisionale. Qui puoi valutare le opzioni di team building pensate
+        per il nostro team di circa 30 persone, complete di costi stimati e dettagli operativi.
+        Una volta concordata l'opzione con il tuo manager, potrai fare clic su{' '}
+        <strong className="text-amber-400">"Proteggi &amp; Condividi"</strong> in alto: la
+        presentazione si bloccherà nella sola{' '}
+        <strong className="text-rose-400">"Vista Team"</strong> nascondendo tutti i budget
+        aziendali e attivando il form di carpooling.
+      </p>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-8 border-t border-slate-900">
+        <div className="p-4 bg-slate-900/40 rounded-xl border border-slate-800/50">
+          <span className="text-slate-500 text-xs block uppercase font-bold">Target Team</span>
+          <span className="text-white font-extrabold text-lg">~30 Persone</span>
+        </div>
+        <div className="p-4 bg-slate-900/40 rounded-xl border border-slate-800/50">
+          <span className="text-slate-500 text-xs block uppercase font-bold">Timing Ottimale</span>
+          <span className="text-white font-extrabold text-lg">09:00 – 17:00</span>
+        </div>
+        <div className="p-4 bg-slate-900/40 rounded-xl border border-slate-800/50">
+          <span className="text-slate-500 text-xs block uppercase font-bold">Stato Database</span>
+          <span className={`font-extrabold text-sm flex items-center gap-1.5 mt-1 ${isCloudEnabled ? 'text-emerald-400' : 'text-amber-400'}`}>
+            <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${isCloudEnabled ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            {isCloudEnabled ? 'Cloud Sincronizzato' : 'Offline / In memoria'}
+          </span>
+        </div>
+        <div className="p-4 bg-slate-900/40 rounded-xl border border-slate-800/50">
+          <span className="text-slate-500 text-xs block uppercase font-bold">Logistica Base</span>
+          <span className="text-white font-extrabold text-lg">Auto / Bus</span>
+        </div>
+      </div>
+    </div>
+  )
 
   // ── Slide Opzione ──────────────────────────────────────────────
   const OptionSlide = ({ opt, index }) => {
@@ -615,21 +665,50 @@ export default function ManagerView() {
   )
 }
 
-  // ── Render slide corrente ──────────────────────────────────────
+// ── Render ────────────────────────────────────────────────────
   const renderSlide = () => {
-    if (currentSlide <= lastOptionSlide) return <OptionSlide opt={options[currentSlide]} index={currentSlide} />
-    if (currentSlide === compareSlide)   return <CompareSlide />
-    if (currentSlide === reportSlide)    return <ReportSlide />
-    if (currentSlide === carpoolSlide)   return <CarpoolingSlide />
-    return null
+    if (currentSlide === introSlide)   return <IntroSlide />
+    if (currentSlide === compareSlide) return <CompareSlide />
+    if (currentSlide === reportSlide)  return <ReportSlide />
+    const optIndex = currentSlide - 1  // slide 1 = option[0], slide 2 = option[1]...
+    if (options[optIndex])             return <OptionSlide opt={options[optIndex]} index={optIndex} />
+    return <IntroSlide />
   }
+
+  const totalSlides = options.length + 3  // intro + opzioni + confronto + report
 
   return (
     <div className="max-w-5xl w-full">
-      <div className="bg-slate-950/60 border border-slate-800 rounded-3xl p-4 md:p-12 shadow-2xl md:min-h-[550px] flex flex-col justify-between slide-enter">
-        <div className="flex-grow">{renderSlide()}</div>
-        <SlideNav />
+      {/* Side panel edit */}
+      {editMode && (
+        <div className="fixed right-0 top-[73px] bottom-0 w-full md:w-96 bg-slate-900 border-l border-slate-800 z-50 overflow-y-auto p-6 shadow-2xl">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">⚙️ Modifica opzioni</h3>
+            <button onClick={() => setEditMode(false)} className="text-slate-400 hover:text-white text-xl">×</button>
+          </div>
+          <p className="text-xs text-slate-400 mb-4">Modifica direttamente i campi nelle slide oppure aggiungi nuove opzioni.</p>
+          <button
+            onClick={addNewOption}
+            className="w-full py-3 border border-dashed border-slate-700 hover:border-indigo-500 rounded-xl text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-all flex justify-center items-center gap-2"
+          >
+            + Aggiungi Nuova Opzione
+          </button>
+          <button
+            onClick={() => { saveOptions(); setEditMode(false) }}
+            className="w-full mt-3 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-bold transition-all"
+          >
+            💾 Salva tutte le modifiche
+          </button>
+        </div>
+      )}
+
+     <div className="bg-slate-950/60 border border-slate-800 rounded-3xl p-4 md:p-12 shadow-2xl md:min-h-[550px] flex flex-col justify-between slide-enter">
+        <div className="flex-grow">
+          {renderSlide()}
+        </div>
+        <SlideNav totalSlides={totalSlides} />
       </div>
     </div>
+    
   )
 }

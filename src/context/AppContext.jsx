@@ -106,9 +106,9 @@ export function AppProvider({ children }) {
 
   // ── RSVP data ─────────────────────────────
   const [rsvps,               setRsvps]               = useState(DEFAULT_RSVPS)
-  const [newRsvp,             setNewRsvp]             = useState({
-    name: '', attending: 'si', diet: '', carOption: 'passenger', carSeats: 4, notes: '',
-  })
+  //const [newRsvp,             setNewRsvp]             = useState({
+  //  name: '', attending: 'si', diet: '', carOption: 'passenger', carSeats: 4, notes: '',
+  //})
 
   // ── Sessione locale (utente che si è registrato) ──
   const [registeredRsvpId,    setRegisteredRsvpId]    = useState(() => localStorage.getItem('tb_registered_rsvp_id') || '')
@@ -375,8 +375,7 @@ export function AppProvider({ children }) {
     setRegisteredName('')
     localStorage.removeItem('tb_registered_rsvp_id')
     localStorage.removeItem('tb_registered_name')
-    setNewRsvp({ name: '', attending: 'si', diet: '', carOption: 'passenger', carSeats: 4, notes: '' })
-  }
+}
 
   const updateRsvpInCloud = async (rsvp) => {
     if (!isCloudEnabled || !rsvp.id) return
@@ -391,45 +390,46 @@ export function AppProvider({ children }) {
   // ─────────────────────────────────────────────
   // RSVP — SUBMIT
   // ─────────────────────────────────────────────
-  const submitRsvp = async () => {
-    if (!newRsvp.name.trim()) {
+  const submitRsvp = async (formData) => {
+    if (!formData.name.trim()) {
       showNotification('Inserisci il tuo nome prima di confermare.', 'error')
       return
     }
 
     // Controllo duplicato: stesso nome già registrato da un altro utente
-    const nameLower = newRsvp.name.trim().toLowerCase()
+    const nameLower = formData.name.trim().toLowerCase()
     const existing  = rsvps.find(r => r.name.toLowerCase() === nameLower)
 
     if (existing && !registeredRsvpId) {
-      setConfirmMessage(`Esiste già una registrazione per "${newRsvp.name}". Vuoi sostituirla ed aggiornare i tuoi dati di trasporto?`)
+      setConfirmMessage(`Esiste già una registrazione per "${formData.name}". Vuoi sostituirla ed aggiornare i tuoi dati di trasporto?`)
       setConfirmAction(() => async () => {
         // Prende possesso del record esistente
         setRegisteredRsvpId(existing.id)
         setRegisteredName(existing.name)
         localStorage.setItem('tb_registered_rsvp_id', existing.id)
         localStorage.setItem('tb_registered_name', existing.name)
-        await saveRsvpProcess(existing.id)
+        await saveRsvpProcess(formData, existing.id)
         setShowConfirmModal(false)
       })
       setShowConfirmModal(true)
       return
     }
 
-    await saveRsvpProcess(registeredRsvpId || null)
+    await saveRsvpProcess(formData, registeredRsvpId || null)
   }
 
-  const saveRsvpProcess = async (targetId) => {
+  const saveRsvpProcess = async (formData, targetId) => {
     const dataToSave = {
-      name:       newRsvp.name.trim(),
-      attending:  newRsvp.attending,
-      diet:       newRsvp.attending === 'si' ? (newRsvp.diet || 'Nessuna') : 'Nessuna',
-      carOption:  newRsvp.attending === 'si' ? newRsvp.carOption : 'autonomous',
-      carSeats:   newRsvp.attending === 'si' && newRsvp.carOption === 'driver'
-                    ? parseInt(newRsvp.carSeats) || 0
-                    : 0,
-      notes:      newRsvp.notes,
-      createdAt:  new Date().toISOString(),
+        name: formData.name.trim(),
+        attending: formData.attending,
+        diet: formData.attending === 'si' ? (formData.diet || 'Nessuna') : 'Nessuna',
+        carOption: formData.attending === 'si' ? formData.carOption : 'autonomous',
+        carSeats:
+        formData.attending === 'si' && formData.carOption === 'driver'
+            ? parseInt(formData.carSeats, 10) || 0
+            : 0,
+        notes: formData.notes || '',
+        createdAt: new Date().toISOString(),
     }
 
     // Mantieni l'assignedDriver se il record esiste già ed è passeggero
@@ -696,7 +696,7 @@ export function AppProvider({ children }) {
 
       // RSVP
       rsvps,
-      newRsvp, setNewRsvp,
+      //newRsvp, setNewRsvp,
       submitRsvp, askDeleteRsvp, clearLocalSession,
       registeredRsvpId, registeredName,
 
