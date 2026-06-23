@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 
+const getInitialForm = () => ({
+  name: '',
+  attending: 'si',
+  diet: '',
+  carOption: 'passenger',
+  carSeats: 0,
+  notes: '',
+})
 
 export default function RegistrationForm() {
   const {
@@ -11,18 +19,12 @@ export default function RegistrationForm() {
     getCurrentUserRsvp,
   } = useApp()
 
-  const getInitialForm = () => ({
-    name: '',
-    attending: 'si',
-    diet: '',
-    carOption: 'passenger',
-    carSeats: 0,
-    notes: '',
-  })
-
   const [formData, setFormData] = useState(getInitialForm())
 
-  
+  const handleField = useCallback((field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }, [])
+
   useEffect(() => {
     const current = getCurrentUserRsvp?.()
     if (current) {
@@ -39,27 +41,23 @@ export default function RegistrationForm() {
     }
   }, [registeredRsvpId, getCurrentUserRsvp])
 
+  useEffect(() => {
+    if (formData.attending === 'no') {
+      setFormData(prev => ({
+        ...prev,
+        diet: '',
+        carOption: 'autonomous',
+        carSeats: 0,
+        notes: '',
+      }))
+    }
+  }, [formData.attending])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     e.stopPropagation()
     await submitRsvp(formData)
   }
-
-  const handleField = useCallback((field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }, [])
-
-  useEffect(() => {
-  if (formData.attending === 'no') {
-    setFormData(prev => ({
-      ...prev,
-      diet: '',
-      carOption: 'autonomous',
-      carSeats: 0,
-      notes: '',
-    }))
-    } 
-  }, [formData.attending])
 
   return (
     <div className="space-y-4">

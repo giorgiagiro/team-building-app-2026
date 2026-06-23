@@ -225,7 +225,7 @@ export default function ManagerView() {
         <p className="text-slate-400 text-sm mt-1">Panoramica side-by-side di tutte le opzioni.</p>
       </div>
       <div className="overflow-x-auto rounded-2xl border border-slate-800">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm min-w-[640px]">
           <thead>
             <tr className="border-b border-slate-800 bg-slate-900/60">
               <th className="text-left py-3 px-4 text-slate-400 font-semibold">Criterio</th>
@@ -312,7 +312,7 @@ export default function ManagerView() {
         {/* Tab: tabella adesioni */}
         {reportTab === 'booking' && (
           <div className="overflow-x-auto max-h-72 overflow-y-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[640px]">
               <thead className="sticky top-0 bg-slate-950">
                 <tr className="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wider">
                   <th className="text-left py-2 px-3">Nome</th>
@@ -620,7 +620,7 @@ export default function ManagerView() {
           📋 Riepilogo completo
         </h3>
         <div className="overflow-x-auto rounded-xl border border-slate-800">
-          <table className="w-full text-left text-xs text-slate-300">
+          <table className="w-full text-left text-xs text-slate-300 min-w-[640px]">
             <thead className="bg-slate-900 text-slate-400 uppercase tracking-wider sticky top-0">
               <tr>
                 <th className="p-3 font-bold">Nome</th>
