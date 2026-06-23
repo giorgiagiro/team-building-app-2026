@@ -138,7 +138,7 @@ export default function RegistrationForm() {
           <>
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1">
-                Email (per eventuali reply)
+                Email Reply
               </label>
               <input
                 type="email"
