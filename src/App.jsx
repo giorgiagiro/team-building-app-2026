@@ -1,4 +1,4 @@
-import { useApp } from './context/AppContext'
+import { useApp, ENABLE_MANAGER_VIEW } from './context/AppContext'
 import Header from './components/Header'
 import ManagerView from './components/ManagerView'
 import TeamView from './components/TeamView'
@@ -26,8 +26,8 @@ export default function App() {
     <div className="text-slate-100 min-h-screen flex flex-col overflow-x-hidden" style={{ backgroundColor: '#0b0f19' }}>
       <Header />
       <main className="flex-grow flex items-center justify-center p-4 md:p-8">
-        {viewMode === 'manager'    && <ManagerView />}
-        {viewMode === 'team'       && <TeamView />}
+        {viewMode === 'manager' && ENABLE_MANAGER_VIEW && <ManagerView />}
+        {viewMode === 'team' && <TeamView />}
         {viewMode === 'carpooling' && <CarpoolingView />}
       </main>
       <ToastContainer />

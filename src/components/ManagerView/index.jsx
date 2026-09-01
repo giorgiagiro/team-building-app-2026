@@ -1,6 +1,284 @@
 import { useApp } from '../../context/AppContext'
-import { useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import SlideNav from '../shared/SlideNav'
+
+const OptionSlideComponent = memo(function OptionSlideComponent({
+  opt,
+  index,
+  editMode,
+  selectedWinnerIndex,
+  draftOptions,
+  lastOptionSlide,
+  currentSlide,
+  updateDraftOption,
+  askDeleteOption,
+  uploadOptionImage,
+  uploadOptionPdf,
+  deleteOptionPdf,
+  saveOptions,
+  addNewOption,
+  setEditMode,
+}) {
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [isUploading, setIsUploading] = useState(false)
+  const [pdfUploadProgress, setPdfUploadProgress] = useState(0)
+  const [isPdfUploading, setIsPdfUploading] = useState(false)
+  const isWinner = index === parseInt(selectedWinnerIndex)
+
+  // Diagnostic mounts/focus logging
+  useEffect(() => {
+    console.log('[OptionSlide] mount', index)
+    return () => console.log('[OptionSlide] unmount', index)
+  }, [])
+
+  return (
+    <div className="space-y-6 slide-enter">
+      {/* Badge + titolo */}
+      <div>
+        {/* Image preview (display only) */}
+        {opt.image && !editMode && (
+          <div className="mb-4">
+            <img src={opt.image} alt={`${opt.title} immagine`} className="w-full h-48 md:h-72 object-cover rounded-xl border border-slate-800" />
+          </div>
+        )}
+        <div className="flex items-start justify-between flex-wrap gap-2 mb-3">
+          <span className={`text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border ${opt.badgeColor}`}>
+            Opzione {String.fromCharCode(65 + index)}{isWinner ? ' 🏆 Vincitrice' : ''}
+          </span>
+          {draftOptions.length > 1 && (
+            <button
+              onClick={() => askDeleteOption(index)}
+              className="text-xs bg-rose-900/40 border border-rose-700/50 text-rose-400 px-3 py-1 rounded-lg hover:bg-rose-900/60 transition-all"
+            >
+              🗑 Rimuovi opzione
+            </button>
+          )}
+        </div>
+
+        {editMode ? (
+          <>
+            <input
+              className="block text-3xl font-extrabold bg-transparent border-b border-indigo-500 text-white focus:outline-none w-full mb-1"
+              value={opt.title}
+              onFocus={() => console.log('[input] focus title', index)}
+              onBlur={() => console.log('[input] blur title', index)}
+              onChange={e => { console.log('[input] change title', index, e.target.value); updateDraftOption(index, 'title', e.target.value) }}
+            />
+            <input
+              className="block text-slate-400 text-sm bg-transparent border-b border-slate-700 focus:outline-none w-full"
+              value={opt.tagline}
+              onChange={e => updateDraftOption(index, 'tagline', e.target.value)}
+            />
+            {/* Image URL field */}
+            <div className="mt-4">
+              <label className="block text-xs font-semibold text-slate-400 mb-1">URL Immagine (opzionale)</label>
+              <input
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                placeholder="https://example.com/image.jpg"
+                value={opt.image || ''}
+                onChange={e => updateDraftOption(index, 'image', e.target.value)}
+              />
+              {opt.image && (
+                <div className="mt-3">
+                  <img src={opt.image} alt="Anteprima" className="w-full h-40 object-cover rounded-lg border border-slate-800" />
+                </div>
+              )}
+
+              {/* File upload */}
+              <div className="mt-3">
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Oppure carica un file</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={isUploading}
+                  onChange={async (e) => {
+                    const f = e.target.files && e.target.files[0]
+                    if (!f) return
+                    try {
+                      setIsUploading(true)
+                      await uploadOptionImage(f, index, (pct) => setUploadProgress(pct))
+                      setIsUploading(false)
+                      setUploadProgress(0)
+                    } catch (err) {
+                      setIsUploading(false)
+                      setUploadProgress(0)
+                      console.error('Upload failed', err)
+                    }
+                  }}
+                  className="w-full text-xs text-slate-400"
+                />
+                {isUploading && (
+                  <div className="w-full bg-slate-800 rounded-full h-2.5 mt-2">
+                    <div className="h-2.5 rounded-full bg-indigo-600 transition-all" style={{ width: `${uploadProgress}%` }} />
+                  </div>
+                )}
+              </div>
+              {/* PDF upload (preventivo) */}
+              <div className="mt-4">
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Preventivo (PDF) — opzionale</label>
+                {opt.pdf ? (
+                  <div className="flex items-center gap-3">
+                    <a href={opt.pdf} target="_blank" rel="noreferrer" className="text-xs text-indigo-300 underline">Apri PDF preventivo</a>
+                    <button
+                      onClick={async () => {
+                        updateDraftOption(index, 'pdf', '')
+                        if (opt.pdf) await deleteOptionPdf(opt.pdf)
+                      }}
+                      className="text-rose-400 text-xs hover:text-rose-300"
+                    >Rimuovi</button>
+                  </div>
+                ) : (
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    disabled={isPdfUploading}
+                    onChange={async (e) => {
+                      const f = e.target.files && e.target.files[0]
+                      if (!f) return
+                      try {
+                        setIsPdfUploading(true)
+                        await uploadOptionPdf(f, index, (pct) => setPdfUploadProgress(pct))
+                        setIsPdfUploading(false)
+                        setPdfUploadProgress(0)
+                      } catch (err) {
+                        setIsPdfUploading(false)
+                        setPdfUploadProgress(0)
+                        console.error('Upload PDF failed', err)
+                      }
+                    }}
+                    className="w-full text-xs text-slate-400"
+                  />
+                )}
+                {isPdfUploading && (
+                  <div className="w-full bg-slate-800 rounded-full h-2.5 mt-2">
+                    <div className="h-2.5 rounded-full bg-indigo-600 transition-all" style={{ width: `${pdfUploadProgress}%` }} />
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="text-3xl font-extrabold text-white">{opt.title}</h2>
+            <p className="text-slate-400 mt-1">{opt.tagline}</p>
+          </>
+        )}
+        <p className="text-slate-500 text-sm mt-1 flex items-center gap-1">
+          <span>📍</span>
+          {editMode ? (
+            <input
+              className="bg-transparent border-b border-slate-700 text-slate-400 text-sm focus:outline-none flex-1"
+              value={opt.location}
+              onChange={e => updateDraftOption(index, 'location', e.target.value)}
+            />
+          ) : opt.location}
+        </p>
+      </div>
+
+      {/* Griglia dettagli */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {[
+          { label: '🌄 Attività Mattutina', field: 'morningActivity', rows: 3 },
+          { label: '🍽️ Pranzo / Pomeriggio', field: 'lunch', rows: 3 },
+        ].map(({ label, field, rows }) => (
+          <div key={field} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{label}</p>
+            {editMode ? (
+              <textarea
+                className="w-full bg-transparent text-slate-300 text-sm focus:outline-none resize-none border-b border-slate-700"
+                rows={rows}
+                value={opt[field]}
+                onChange={e => updateDraftOption(index, field, e.target.value)}
+              />
+            ) : (
+              <p className="text-slate-300 text-sm leading-relaxed">{opt[field]}</p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Badge metriche */}
+      <div className="flex flex-wrap gap-3">
+        {[
+          { label: '💪 Intensità fisica', field: 'physicalLevel' },
+          { label: '🍻 Vibe alcolico',    field: 'alcoholVibe' },
+          { label: '🚗 Logistica',        field: 'logistics' },
+        ].map(({ label, field }) => (
+          <div key={field} className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-2">
+            <span className="text-xs text-slate-400 font-semibold">{label}:</span>
+            {editMode ? (
+              <input
+                className="bg-transparent text-white text-xs font-bold focus:outline-none border-b border-slate-700 w-28"
+                value={opt[field]}
+                onChange={e => updateDraftOption(index, field, e.target.value)}
+              />
+            ) : (
+              <span className="text-white text-xs font-bold">{opt[field]}</span>
+            )}
+          </div>
+        ))}
+
+        {/* Budget */}
+        <div className="bg-indigo-950/50 border border-indigo-800/50 rounded-xl px-4 py-2 flex items-center gap-2">
+          <span className="text-xs text-indigo-400 font-semibold">💶 Budget:</span>
+          {editMode ? (
+            <input
+              type="number"
+              className="bg-transparent text-indigo-300 text-sm font-extrabold focus:outline-none border-b border-indigo-500 w-20"
+              value={opt.budget}
+              onChange={e => updateDraftOption(index, 'budget', parseInt(e.target.value) || 0)}
+            />
+          ) : (
+            <span className="text-indigo-300 font-extrabold">~€{opt.budget}/persona</span>
+          )}
+        </div>
+      </div>
+
+      {/* Bottone salva (solo in editMode) */}
+      {editMode && (
+        <div className="flex gap-3 flex-wrap">
+          <button
+            onClick={() => { saveOptions(draftOptions); setEditMode(false) }}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
+          >
+            💾 Salva tutte le modifiche
+          </button>
+          {currentSlide === lastOptionSlide && (
+            <button
+              onClick={addNewOption}
+              className="border border-dashed border-slate-700 hover:border-indigo-500 text-slate-400 hover:text-indigo-400 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
+            >
+              + Aggiungi opzione
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if data (not functions) changes
+  return (
+    prevProps.opt.id === nextProps.opt.id &&
+    prevProps.opt.title === nextProps.opt.title &&
+    prevProps.opt.tagline === nextProps.opt.tagline &&
+    prevProps.opt.location === nextProps.opt.location &&
+    prevProps.opt.image === nextProps.opt.image &&
+    prevProps.opt.morningActivity === nextProps.opt.morningActivity &&
+    prevProps.opt.lunch === nextProps.opt.lunch &&
+    prevProps.opt.physicalLevel === nextProps.opt.physicalLevel &&
+    prevProps.opt.alcoholVibe === nextProps.opt.alcoholVibe &&
+    prevProps.opt.logistics === nextProps.opt.logistics &&
+    prevProps.opt.budget === nextProps.opt.budget &&
+    prevProps.opt.pdf === nextProps.opt.pdf &&
+    prevProps.opt.badgeColor === nextProps.opt.badgeColor &&
+    prevProps.index === nextProps.index &&
+    prevProps.editMode === nextProps.editMode &&
+    prevProps.selectedWinnerIndex === nextProps.selectedWinnerIndex &&
+    prevProps.draftOptions.length === nextProps.draftOptions.length &&
+    prevProps.lastOptionSlide === nextProps.lastOptionSlide &&
+    prevProps.currentSlide === nextProps.currentSlide
+  )
+})
 
 export default function ManagerView() {
   const {
@@ -24,6 +302,16 @@ export default function ManagerView() {
     , uploadOptionImage, uploadOptionPdf, deleteOptionPdf
   } = useApp()
 
+  const [draftOptions, setDraftOptions] = useState(options)
+
+  useEffect(() => {
+    setDraftOptions(options)
+  }, [options])
+
+  const updateDraftOption = (index, field, value) => {
+    setDraftOptions(prev => prev.map((option, optionIndex) => optionIndex === index ? { ...option, [field]: value } : option))
+  }
+
   // Struttura slide:
   // 0          = intro/benvenuto
   // 1..N       = una slide per opzione
@@ -31,9 +319,9 @@ export default function ManagerView() {
   // N+2        = report adesioni
 
   const introSlide   = 0
-  const compareSlide = options.length + 1
-  const reportSlide  = options.length + 2
-  const lastOptionSlide = options.length
+  const compareSlide = draftOptions.length + 1
+  const reportSlide  = draftOptions.length + 2
+  const lastOptionSlide = draftOptions.length
 
 
    // ── Slide 0: Benvenuto Manager ────────────────────────────────
@@ -85,238 +373,7 @@ export default function ManagerView() {
     </div>
   )
 
-  // ── Slide Opzione ──────────────────────────────────────────────
-  const OptionSlide = ({ opt, index }) => {
-    const [uploadProgress, setUploadProgress] = useState(0)
-    const [isUploading, setIsUploading] = useState(false)
-    const [pdfUploadProgress, setPdfUploadProgress] = useState(0)
-    const [isPdfUploading, setIsPdfUploading] = useState(false)
-    const isWinner = index === parseInt(selectedWinnerIndex)
-    return (
-      <div className="space-y-6 slide-enter">
-        {/* Badge + titolo */}
-        <div>
-          {/* Image preview (display only) */}
-          {opt.image && !editMode && (
-            <div className="mb-4">
-              <img src={opt.image} alt={`${opt.title} immagine`} className="w-full h-48 md:h-72 object-cover rounded-xl border border-slate-800" />
-            </div>
-          )}
-          <div className="flex items-start justify-between flex-wrap gap-2 mb-3">
-            <span className={`text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border ${opt.badgeColor}`}>
-              Opzione {String.fromCharCode(65 + index)}{isWinner ? ' 🏆 Vincitrice' : ''}
-            </span>
-            {options.length > 1 && (
-              <button
-                onClick={() => askDeleteOption(index)}
-                className="text-xs bg-rose-900/40 border border-rose-700/50 text-rose-400 px-3 py-1 rounded-lg hover:bg-rose-900/60 transition-all"
-              >
-                🗑 Rimuovi opzione
-              </button>
-            )}
-          </div>
-
-          {editMode ? (
-            <>
-              <input
-                className="block text-3xl font-extrabold bg-transparent border-b border-indigo-500 text-white focus:outline-none w-full mb-1"
-                value={opt.title}
-                onChange={e => updateOption(index, 'title', e.target.value)}
-              />
-              <input
-                className="block text-slate-400 text-sm bg-transparent border-b border-slate-700 focus:outline-none w-full"
-                value={opt.tagline}
-                onChange={e => updateOption(index, 'tagline', e.target.value)}
-              />
-              {/* Image URL field */}
-              <div className="mt-4">
-                <label className="block text-xs font-semibold text-slate-400 mb-1">URL Immagine (opzionale)</label>
-                <input
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-                  placeholder="https://example.com/image.jpg"
-                  value={opt.image || ''}
-                  onChange={e => updateOption(index, 'image', e.target.value)}
-                />
-                {opt.image && (
-                  <div className="mt-3">
-                    <img src={opt.image} alt="Anteprima" className="w-full h-40 object-cover rounded-lg border border-slate-800" />
-                  </div>
-                )}
-
-                {/* File upload */}
-                <div className="mt-3">
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Oppure carica un file</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={isUploading}
-                    onChange={async (e) => {
-                      const f = e.target.files && e.target.files[0]
-                      if (!f) return
-                      try {
-                        setIsUploading(true)
-                        await uploadOptionImage(f, index, (pct) => setUploadProgress(pct))
-                        setIsUploading(false)
-                        setUploadProgress(0)
-                        // notification handled by upload function via save
-                      } catch (err) {
-                        setIsUploading(false)
-                        setUploadProgress(0)
-                        console.error('Upload failed', err)
-                      }
-                    }}
-                    className="w-full text-xs text-slate-400"
-                  />
-                  {isUploading && (
-                    <div className="w-full bg-slate-800 rounded-full h-2.5 mt-2">
-                      <div className="h-2.5 rounded-full bg-indigo-600 transition-all" style={{ width: `${uploadProgress}%` }} />
-                    </div>
-                  )}
-                </div>
-                {/* PDF upload (preventivo) */}
-                <div className="mt-4">
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Preventivo (PDF) — opzionale</label>
-                  {opt.pdf ? (
-                    <div className="flex items-center gap-3">
-                      <a href={opt.pdf} target="_blank" rel="noreferrer" className="text-xs text-indigo-300 underline">Apri PDF preventivo</a>
-                      <button
-                        onClick={async () => {
-                          // elimina riferimento e (opzionale) cancella dal storage
-                          updateOption(index, 'pdf', '')
-                          if (opt.pdf) await deleteOptionPdf(opt.pdf)
-                        }}
-                        className="text-rose-400 text-xs hover:text-rose-300"
-                      >Rimuovi</button>
-                    </div>
-                  ) : (
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      disabled={isPdfUploading}
-                      onChange={async (e) => {
-                        const f = e.target.files && e.target.files[0]
-                        if (!f) return
-                        try {
-                          setIsPdfUploading(true)
-                          await uploadOptionPdf(f, index, (pct) => setPdfUploadProgress(pct))
-                          setIsPdfUploading(false)
-                          setPdfUploadProgress(0)
-                        } catch (err) {
-                          setIsPdfUploading(false)
-                          setPdfUploadProgress(0)
-                          console.error('Upload PDF failed', err)
-                        }
-                      }}
-                      className="w-full text-xs text-slate-400"
-                    />
-                  )}
-                  {isPdfUploading && (
-                    <div className="w-full bg-slate-800 rounded-full h-2.5 mt-2">
-                      <div className="h-2.5 rounded-full bg-indigo-600 transition-all" style={{ width: `${pdfUploadProgress}%` }} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <h2 className="text-3xl font-extrabold text-white">{opt.title}</h2>
-              <p className="text-slate-400 mt-1">{opt.tagline}</p>
-            </>
-          )}
-          <p className="text-slate-500 text-sm mt-1 flex items-center gap-1">
-            <span>📍</span>
-            {editMode ? (
-              <input
-                className="bg-transparent border-b border-slate-700 text-slate-400 text-sm focus:outline-none flex-1"
-                value={opt.location}
-                onChange={e => updateOption(index, 'location', e.target.value)}
-              />
-            ) : opt.location}
-          </p>
-        </div>
-
-        {/* Griglia dettagli */}
-        <div className="grid md:grid-cols-2 gap-4">
-          {[
-            { label: '🌄 Attività Mattutina', field: 'morningActivity', rows: 3 },
-            { label: '🍽️ Pranzo / Pomeriggio', field: 'lunch', rows: 3 },
-          ].map(({ label, field, rows }) => (
-            <div key={field} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{label}</p>
-              {editMode ? (
-                <textarea
-                  className="w-full bg-transparent text-slate-300 text-sm focus:outline-none resize-none border-b border-slate-700"
-                  rows={rows}
-                  value={opt[field]}
-                  onChange={e => updateOption(index, field, e.target.value)}
-                />
-              ) : (
-                <p className="text-slate-300 text-sm leading-relaxed">{opt[field]}</p>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Badge metriche */}
-        <div className="flex flex-wrap gap-3">
-          {[
-            { label: '💪 Intensità fisica', field: 'physicalLevel' },
-            { label: '🍻 Vibe alcolico',    field: 'alcoholVibe' },
-            { label: '🚗 Logistica',        field: 'logistics' },
-          ].map(({ label, field }) => (
-            <div key={field} className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-2">
-              <span className="text-xs text-slate-400 font-semibold">{label}:</span>
-              {editMode ? (
-                <input
-                  className="bg-transparent text-white text-xs font-bold focus:outline-none border-b border-slate-700 w-28"
-                  value={opt[field]}
-                  onChange={e => updateOption(index, field, e.target.value)}
-                />
-              ) : (
-                <span className="text-white text-xs font-bold">{opt[field]}</span>
-              )}
-            </div>
-          ))}
-
-          {/* Budget */}
-          <div className="bg-indigo-950/50 border border-indigo-800/50 rounded-xl px-4 py-2 flex items-center gap-2">
-            <span className="text-xs text-indigo-400 font-semibold">💶 Budget:</span>
-            {editMode ? (
-              <input
-                type="number"
-                className="bg-transparent text-indigo-300 text-sm font-extrabold focus:outline-none border-b border-indigo-500 w-20"
-                value={opt.budget}
-                onChange={e => updateOption(index, 'budget', parseInt(e.target.value) || 0)}
-              />
-            ) : (
-              <span className="text-indigo-300 font-extrabold">~€{opt.budget}/persona</span>
-            )}
-          </div>
-        </div>
-
-        {/* Bottone salva (solo in editMode) */}
-        {editMode && (
-          <div className="flex gap-3 flex-wrap">
-            <button
-              onClick={() => { saveOptions(); setEditMode(false) }}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
-            >
-              💾 Salva tutte le modifiche
-            </button>
-            {currentSlide === lastOptionSlide && (
-              <button
-                onClick={addNewOption}
-                className="border border-dashed border-slate-700 hover:border-indigo-500 text-slate-400 hover:text-indigo-400 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
-              >
-                + Aggiungi opzione
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    )
-  }
+  // ── Slide Opzione (renderizza direttamente il componente esterno)
 
   // ── Slide Confronto ────────────────────────────────────────────
   const CompareSlide = () => (
@@ -349,7 +406,7 @@ export default function ManagerView() {
             ].map(([label, field]) => (
               <tr key={field} className="border-b border-slate-900 hover:bg-slate-900/40 transition-colors">
                 <td className="py-3 px-4 text-slate-400 font-semibold">{label}</td>
-                {options.map((opt, i) => (
+                {draftOptions.map((opt, i) => (
                   <td key={i} className={`py-3 px-4 text-center ${i === parseInt(selectedWinnerIndex) ? 'text-amber-300 font-bold' : 'text-slate-300'}`}>
                     {field === 'budget' ? `€${opt[field]}/pp` : opt[field]}
                   </td>
@@ -369,11 +426,7 @@ export default function ManagerView() {
     const drivers      = rsvps.filter(r => r.attending === 'si' && r.carOption === 'driver')
     const passengers   = rsvps.filter(r => r.attending === 'si' && r.carOption === 'passenger')
     const autonomous   = rsvps.filter(r => r.attending === 'si' && r.carOption === 'autonomous')
-    const dietCounts   = attending.reduce((acc, r) => {
-      const d = r.diet || 'Nessuna'
-      acc[d] = (acc[d] || 0) + 1
-      return acc
-    }, {})
+    // diet field removed — no dietCounts
 
     const transportLabel = (r) => {
       if (r.carOption === 'driver')    return `🚗 Guida (${r.carSeats} posti)`
@@ -419,7 +472,7 @@ export default function ManagerView() {
                 <tr className="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wider">
                   <th className="text-left py-2 px-3">Nome</th>
                   <th className="text-left py-2 px-3">Presenza</th>
-                  <th className="text-left py-2 px-3">Dieta</th>
+                  
                   <th className="text-left py-2 px-3">Trasporto</th>
                   <th className="text-left py-2 px-3">Note</th>
                   <th className="py-2 px-3"></th>
@@ -437,7 +490,7 @@ export default function ManagerView() {
                         {r.attending === 'si' ? '✅ Sì' : '❌ No'}
                       </span>
                     </td>
-                    <td className="py-2.5 px-3 text-slate-300">{r.diet || '—'}</td>
+                    
                     <td className="py-2.5 px-3 text-slate-300 text-xs">{transportLabel(r)}</td>
                     <td className="py-2.5 px-3 text-slate-400 text-xs max-w-[140px] truncate">{r.notes || '—'}</td>
                     <td className="py-2.5 px-3">
@@ -483,19 +536,7 @@ export default function ManagerView() {
               ))}
             </div>
 
-            {/* Diete */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">🥗 Diete</p>
-              {Object.entries(dietCounts).length === 0
-                ? <p className="text-slate-500 text-xs">Nessun dato</p>
-                : Object.entries(dietCounts).map(([diet, count]) => (
-                    <div key={diet} className="flex justify-between items-center">
-                      <span className="text-slate-400 text-sm">{diet}</span>
-                      <span className="font-extrabold text-indigo-400">{count}</span>
-                    </div>
-                  ))
-              }
-            </div>
+            {/* Diete panel removed */}
           </div>
         )}
       </div>
@@ -615,9 +656,7 @@ export default function ManagerView() {
                       <div className="flex items-center gap-2">
                         <span className="text-indigo-400 text-xs">👤</span>
                         <span className="text-xs font-semibold text-slate-200">{p.name}</span>
-                        {p.diet && p.diet !== 'Nessuna' && (
-                          <span className="text-xs bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full">{p.diet}</span>
-                        )}
+                        {/* diet badge removed */}
                       </div>
                       <button
                         onClick={() => unassignPassenger(p.id)}
@@ -686,9 +725,7 @@ export default function ManagerView() {
                   <p className="text-xs font-bold text-white">{p.name}</p>
                   <p className="text-xs text-slate-500 italic">{p.notes || 'Nessuna nota'}</p>
                 </div>
-                {p.diet && p.diet !== 'Nessuna' && (
-                  <span className="text-xs bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full">{p.diet}</span>
-                )}
+                {/* diet badge removed */}
               </div>
             ))}
           </div>
@@ -724,17 +761,16 @@ export default function ManagerView() {
         <div className="overflow-x-auto rounded-xl border border-slate-800">
           <table className="w-full text-left text-xs text-slate-300 min-w-[640px]">
             <thead className="bg-slate-900 text-slate-400 uppercase tracking-wider sticky top-0">
-              <tr>
+                <tr>
                 <th className="p-3 font-bold">Nome</th>
                 <th className="p-3 font-bold">Ruolo</th>
                 <th className="p-3 font-bold">Auto / Passaggio</th>
-                <th className="p-3 font-bold">Dieta</th>
                 <th className="p-3 font-bold">Note</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 bg-slate-950/20">
               {rsvps.filter(r => r.attending === 'si').length === 0 && (
-                <tr><td colSpan={5} className="p-8 text-center text-slate-600">Nessuna adesione ancora.</td></tr>
+                <tr><td colSpan={4} className="p-8 text-center text-slate-600">Nessuna adesione ancora.</td></tr>
               )}
               {rsvps.filter(r => r.attending === 'si').map(r => (
                 <tr key={r.id} className="hover:bg-slate-900/40 transition-colors">
@@ -754,7 +790,6 @@ export default function ManagerView() {
                     {r.carOption === 'passenger' && !r.assignedDriver && <span className="text-amber-400 italic">Non assegnato</span>}
                     {r.carOption === 'autonomous' && <span className="text-slate-500 italic">—</span>}
                   </td>
-                  <td className="p-3 text-slate-400">{r.diet || 'Nessuna'}</td>
                   <td className="p-3 text-slate-500 italic">{r.notes || '—'}</td>
                 </tr>
               ))}
@@ -773,11 +808,31 @@ export default function ManagerView() {
     if (currentSlide === compareSlide) return <CompareSlide />
     if (currentSlide === reportSlide)  return <ReportSlide />
     const optIndex = currentSlide - 1  // slide 1 = option[0], slide 2 = option[1]...
-    if (options[optIndex])             return <OptionSlide opt={options[optIndex]} index={optIndex} />
+    if (draftOptions[optIndex]) {
+      return (
+        <OptionSlideComponent
+          opt={draftOptions[optIndex]}
+          index={optIndex}
+          editMode={editMode}
+          selectedWinnerIndex={selectedWinnerIndex}
+          draftOptions={draftOptions}
+          lastOptionSlide={lastOptionSlide}
+          currentSlide={currentSlide}
+          updateDraftOption={updateDraftOption}
+          askDeleteOption={askDeleteOption}
+          uploadOptionImage={uploadOptionImage}
+          uploadOptionPdf={uploadOptionPdf}
+          deleteOptionPdf={deleteOptionPdf}
+          saveOptions={saveOptions}
+          addNewOption={addNewOption}
+          setEditMode={setEditMode}
+        />
+      )
+    }
     return <IntroSlide />
   }
 
-  const totalSlides = options.length + 3  // intro + opzioni + confronto + report
+  const totalSlides = draftOptions.length + 3  // intro + opzioni + confronto + report
 
   return (
     <div className="max-w-5xl w-full">
@@ -796,7 +851,7 @@ export default function ManagerView() {
             + Aggiungi Nuova Opzione
           </button>
           <button
-            onClick={() => { saveOptions(); setEditMode(false) }}
+            onClick={() => { saveOptions(draftOptions); setEditMode(false) }}
             className="w-full mt-3 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-bold transition-all"
           >
             💾 Salva tutte le modifiche

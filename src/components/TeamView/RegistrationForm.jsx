@@ -5,7 +5,6 @@ const getInitialForm = () => ({
   name: '',
   replyEmail: '',
   attending: 'si',
-  diet: '',
   carOption: 'passenger',
   carSeats: 1,
   notes: '',
@@ -33,7 +32,6 @@ export default function RegistrationForm({ onSubmitted } = {}) {
         name: current.name || '',
         replyEmail: current.replyEmail || '',
         attending: current.attending || 'si',
-        diet: current.diet && current.diet !== 'Nessuna' ? current.diet : '',
         carOption: current.carOption || 'passenger',
         carSeats: (() => {
           const cs = parseInt(current.carSeats, 10)
@@ -51,7 +49,6 @@ export default function RegistrationForm({ onSubmitted } = {}) {
     if (formData.attending === 'no') {
       setFormData(prev => ({
         ...prev,
-        diet: '',
         carOption: 'autonomous',
         carSeats: 0,
         notes: '',
@@ -153,18 +150,7 @@ export default function RegistrationForm({ onSubmitted } = {}) {
                 className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">
-                Intolleranze Alimentari / Preferenze
-              </label>
-              <input
-                type="text"
-                placeholder="Es. Celiaco, Vegetariano, Nessuna..."
-                value={formData.diet}
-                onChange={e => handleField('diet', e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-              />
-            </div>
+            {/* Intolleranze rimosse */}
 
             <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 space-y-3">
               <label className="block text-xs font-bold text-indigo-400 uppercase tracking-wider">
@@ -203,19 +189,20 @@ export default function RegistrationForm({ onSubmitted } = {}) {
                   <span className="text-xs text-slate-400">
                     Posti totali disponibili in auto:
                   </span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="5"
-                    value={formData.carSeats}
+                  <select
+                    value={Math.max(1, Math.min(5, Number(formData.carSeats) || 1))}
                     onChange={e => {
-                      let v = parseInt(e.target.value, 10)
-                      if (Number.isNaN(v)) v = 1
-                      v = Math.max(1, Math.min(5, v))
+                      const v = Math.max(1, Math.min(5, parseInt(e.target.value, 10) || 1))
                       handleField('carSeats', v)
                     }}
-                    className="w-16 bg-slate-900 border border-slate-700 rounded p-1 text-center text-xs text-white focus:outline-none focus:border-indigo-500"
-                  />
+                    className="w-20 bg-slate-900 border border-slate-700 rounded p-1 text-center text-xs text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value={1}>1</option>
+                    <option value={2}>2</option>
+                    <option value={3}>3</option>
+                    <option value={4}>4</option>
+                    <option value={5}>5</option>
+                  </select>
                 </div>
               )}
             </div>

@@ -168,9 +168,7 @@ export default function CarpoolingView() {
                           <div className="flex items-center gap-2">
                             <span className="text-indigo-400 text-xs">👤</span>
                             <span className="text-xs font-semibold text-slate-200">{p.name}</span>
-                            {p.diet && p.diet !== 'Nessuna' && (
-                              <span className="text-xs bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full">{p.diet}</span>
-                            )}
+                            {/* diet badge removed */}
                           </div>
                           {/* Bottone rimuovi: manager vede sempre, passeggero solo il suo posto */}
                           {(!isLocked || p.id === registeredRsvpId) && (
@@ -296,9 +294,7 @@ export default function CarpoolingView() {
                       <p className="text-xs font-bold text-white">{p.name}</p>
                       <p className="text-xs text-slate-500 italic">{p.notes || 'Nessuna nota'}</p>
                     </div>
-                    {p.diet && p.diet !== 'Nessuna' && (
-                      <span className="text-xs bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full">{p.diet}</span>
-                    )}
+                    {/* diet badge removed */}
                   </div>
                 ))}
               </div>
@@ -348,14 +344,14 @@ export default function CarpoolingView() {
                     <th className="p-3 font-bold">Nome</th>
                     <th className="p-3 font-bold">Ruolo</th>
                     <th className="p-3 font-bold">Auto / Passaggio</th>
-                    <th className="p-3 font-bold">Dieta</th>
+                    
                     <th className="p-3 font-bold">Note</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 bg-slate-950/20">
                   {rsvps.filter(r => r.attending === 'si').length === 0 && (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-slate-600">Nessuna adesione ancora.</td>
+                      <td colSpan={4} className="p-8 text-center text-slate-600">Nessuna adesione ancora.</td>
                     </tr>
                   )}
                   {rsvps.filter(r => r.attending === 'si').map(r => (
@@ -376,7 +372,7 @@ export default function CarpoolingView() {
                         {r.carOption === 'passenger' && !r.assignedDriver && <span className="text-amber-400 italic">Non assegnato</span>}
                         {r.carOption === 'autonomous' && <span className="text-slate-500 italic">—</span>}
                       </td>
-                      <td className="p-3 text-slate-400">{r.diet || 'Nessuna'}</td>
+                      
                       <td className="p-3 text-slate-500 italic">{r.notes || '—'}</td>
                     </tr>
                   ))}

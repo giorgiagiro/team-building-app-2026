@@ -16,6 +16,11 @@ import { signInAnonymously } from 'firebase/auth'
 import { storage } from '../firebase/config'
 
 // ─────────────────────────────────────────────
+// FEATURE FLAG: imposta a true per riattivare la vista Manager
+// ─────────────────────────────────────────────
+export const ENABLE_MANAGER_VIEW = false
+
+// ─────────────────────────────────────────────
 // DATI DI DEFAULT (usati se il Cloud non è disponibile)
 // ─────────────────────────────────────────────
 const DEFAULT_OPTIONS = [
@@ -51,7 +56,7 @@ const DEFAULT_OPTIONS = [
     tagline: "Collaborazione strategica, creatività e design in una cornice d'acqua.",
     location: 'Idroscalo di Milano / Naviglio',
     badgeColor: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-    morningActivity: "Dragon Boat challenge: il team costruisce una zattera con materiali di recupero e disputa una regata ad eliminazione.",
+    morningActivity: "Sessione di go-kart su circuito privato: gare a squadre con prove di qualificazione e finali, briefing sulla sicurezza e coaching. Format competitivo e divertente pensato per stimolare comunicazione, strategia e spirito di squadra; si conclude con premiazione e debrief rapido.",
     lunch: "Pranzo e pool party privato presso un Beach Club sull'Idroscalo. Open bar di cocktail e DJ set.",
     physicalLevel: 'Media',
     alcoholVibe: 'Alto / Open Bar / Cocktail',
@@ -61,11 +66,11 @@ const DEFAULT_OPTIONS = [
 ]
 
 const DEFAULT_RSVPS = [
-  { id: '1', name: 'Alessandro Neri',  attending: 'si', diet: 'Nessuna',      carOption: 'driver',    carSeats: 3, notes: 'Partenza da Rho Fiera',                        assignedDriver: null },
-  { id: '2', name: 'Giulia Bianchi',   attending: 'si', diet: 'Vegetariano',  carOption: 'passenger', carSeats: 0, notes: 'Abito in zona Loreto',                         assignedDriver: 'Alessandro Neri' },
-  { id: '3', name: 'Marco Viola',      attending: 'si', diet: 'No glutine',   carOption: 'autonomous',carSeats: 0, notes: 'Abito vicino alla location',                   assignedDriver: null },
-  { id: '4', name: 'Laura Verde',      attending: 'si', diet: 'Nessuna',      carOption: 'driver',    carSeats: 4, notes: 'Disponibile a raccogliere persone in Centrale',assignedDriver: null },
-  { id: '5', name: 'Stefano Rossi',    attending: 'si', diet: 'Nessuna',      carOption: 'passenger', carSeats: 0, notes: 'Cerco passaggi da Milano',                     assignedDriver: null },
+  { id: '1', name: 'Alessandro Neri',  attending: 'si', carOption: 'driver',    carSeats: 3, notes: 'Partenza da Rho Fiera',                        assignedDriver: null },
+  { id: '2', name: 'Giulia Bianchi',   attending: 'si', carOption: 'passenger', carSeats: 0, notes: 'Abito in zona Loreto',                         assignedDriver: 'Alessandro Neri' },
+  { id: '3', name: 'Marco Viola',      attending: 'si', carOption: 'autonomous',carSeats: 0, notes: 'Abito vicino alla location',                   assignedDriver: null },
+  { id: '4', name: 'Laura Verde',      attending: 'si', carOption: 'driver',    carSeats: 4, notes: 'Disponibile a raccogliere persone in Centrale',assignedDriver: null },
+  { id: '5', name: 'Stefano Rossi',    attending: 'si', carOption: 'passenger', carSeats: 0, notes: 'Cerco passaggi da Milano',                     assignedDriver: null },
 ]
 
 // ─────────────────────────────────────────────
@@ -76,7 +81,7 @@ const AppContext = createContext(null)
 export function AppProvider({ children }) {
 
   // ── UI state ──────────────────────────────
-  const [viewMode,            setViewModeRaw]        = useState('manager')
+  const [viewMode,            setViewModeRaw]        = useState(ENABLE_MANAGER_VIEW ? 'manager' : 'team')
   const [currentSlide,        setCurrentSlide]       = useState(0)
   const [editMode,            setEditMode]           = useState(false)
   const [reportTab,           setReportTab]          = useState('booking')
@@ -257,6 +262,13 @@ export function AppProvider({ children }) {
   // VIEW MODE
   // ─────────────────────────────────────────────
   const setViewMode = useCallback((mode) => {
+    if (!ENABLE_MANAGER_VIEW && mode === 'manager') {
+      setViewModeRaw('team')
+      setCurrentSlide(0)
+      setEditMode(false)
+      return
+    }
+
     // Se è bloccato e tenta di andare in Manager → apri modal unlock
     if (isLocked && mode === 'manager') {
       setUnlockPasswordInput('')
@@ -312,11 +324,11 @@ export function AppProvider({ children }) {
   const unlockApp = async () => {
     if (unlockPasswordInput === savedPassword) {
       setIsLocked(false)
-      setViewModeRaw('manager')
+      setViewModeRaw(ENABLE_MANAGER_VIEW ? 'manager' : 'team')
       setCurrentSlide(0)
       setShowUnlockModal(false)
       await syncSettings({ isLocked: false })
-      showNotification('Pannello Manager sbloccato!', 'success')
+      showNotification(ENABLE_MANAGER_VIEW ? 'Pannello Manager sbloccato!' : 'Applicazione ripristinata alla vista Team.', 'success')
     } else {
       setUnlockError(true)
     }
@@ -329,8 +341,10 @@ export function AppProvider({ children }) {
     setOptions(prev => prev.map((o, i) => i === index ? { ...o, [field]: value } : o))
   }
 
-  const saveOptions = async () => {
-    await syncSettings({ options: JSON.parse(JSON.stringify(options)) })
+  const saveOptions = async (overrideOptions = options) => {
+    const normalized = JSON.parse(JSON.stringify(overrideOptions))
+    setOptions(normalized)
+    await syncSettings({ options: normalized })
     showNotification('Modifiche salvate nel Cloud!', 'success')
   }
 
@@ -518,7 +532,6 @@ export function AppProvider({ children }) {
         name: formData.name.trim(),
       replyEmail: formData.replyEmail || '',
         attending: formData.attending,
-        diet: formData.attending === 'si' ? (formData.diet || 'Nessuna') : 'Nessuna',
         carOption: formData.attending === 'si' ? formData.carOption : 'autonomous',
         carSeats:
         formData.attending === 'si' && formData.carOption === 'driver'
@@ -681,12 +694,11 @@ export function AppProvider({ children }) {
 
     // ── Foglio 1: Adesioni ──
     xml += `<Worksheet ss:Name="Generale Adesioni"><Table>`
-    xml += `<Row ss:Height="25"><Cell ss:StyleID="Title" ss:MergeAcross="6"><Data ss:Type="String">REPORT GENERALI ADESIONI - TEAM BUILDING 2026</Data></Cell></Row>`
+    xml += `<Row ss:Height="25"><Cell ss:StyleID="Title" ss:MergeAcross="5"><Data ss:Type="String">REPORT GENERALI ADESIONI - TEAM BUILDING 2026</Data></Cell></Row>`
     xml += `<Row ss:Height="20">`
     xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">Nome Partecipante</Data></Cell>`
     xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">Email</Data></Cell>`
     xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">Presenza</Data></Cell>`
-    xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">Preferenze Cibo</Data></Cell>`
     xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">Scelta Trasporto</Data></Cell>`
     xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">Posti Offerti</Data></Cell>`
     xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">Note Zona Partenza</Data></Cell>`
@@ -697,7 +709,6 @@ export function AppProvider({ children }) {
       xml += `<Cell><Data ss:Type="String">${escapeXml(r.name)}</Data></Cell>`
       xml += `<Cell><Data ss:Type="String">${escapeXml(r.replyEmail || '')}</Data></Cell>`
       xml += `<Cell><Data ss:Type="String">${escapeXml(r.attending?.toUpperCase())}</Data></Cell>`
-      xml += `<Cell><Data ss:Type="String">${escapeXml(r.diet || 'Nessuna')}</Data></Cell>`
       xml += `<Cell><Data ss:Type="String">${transport}</Data></Cell>`
       xml += `<Cell><Data ss:Type="Number">${r.carOption === 'driver' ? (r.carSeats || 0) : 0}</Data></Cell>`
       xml += `<Cell><Data ss:Type="String">${escapeXml(r.notes)}</Data></Cell>`

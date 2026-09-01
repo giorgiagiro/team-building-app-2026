@@ -1,4 +1,4 @@
-import { useApp } from '../context/AppContext'
+import { useApp, ENABLE_MANAGER_VIEW } from '../context/AppContext'
 
 export default function Header() {
   const {
@@ -29,9 +29,9 @@ export default function Header() {
         {/* Nav centrale */}
         <nav className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
           {[
-            { id: 'manager',    icon: '⚙️', label: 'Manager',    locked: isLocked },
-            { id: 'team',       icon: '👥', label: 'Team',       locked: false    },
-            { id: 'carpooling', icon: '🚗', label: 'Carpooling', locked: false    },
+            ...(ENABLE_MANAGER_VIEW ? [{ id: 'manager', icon: '⚙️', label: 'Manager', locked: isLocked }] : []),
+            { id: 'team', icon: '👥', label: 'Attività', locked: false },
+            { id: 'carpooling', icon: '🚗', label: 'Carpooling', locked: false },
           ].map(({ id, icon, label, locked }) => (
             <button
               key={id}
@@ -53,7 +53,7 @@ export default function Header() {
         <div className="flex items-center gap-2 flex-wrap">
 
           {/* Selettore opzione vincitrice — solo in manager mode */}
-          {viewMode === 'manager' && !isLocked && (
+          {ENABLE_MANAGER_VIEW && viewMode === 'manager' && !isLocked && (
             <div className="flex items-center gap-2">
               <label className="text-xs text-slate-400 font-semibold whitespace-nowrap">🏆 Vincitrice:</label>
               <select
@@ -69,7 +69,7 @@ export default function Header() {
           )}
 
           {/* Edit mode toggle — solo manager sbloccato */}
-          {viewMode === 'manager' && !isLocked && (
+          {ENABLE_MANAGER_VIEW && viewMode === 'manager' && !isLocked && (
             <button
               onClick={() => {
                 if (editMode) saveOptions()
@@ -86,7 +86,7 @@ export default function Header() {
           )}
 
           {/* Export Excel */}
-          {viewMode === 'manager' && !isLocked && (
+          {ENABLE_MANAGER_VIEW && viewMode === 'manager' && !isLocked && (
             <button
               onClick={exportToExcel}
               className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 border border-slate-700 text-slate-300 hover:border-slate-500 transition-all"
@@ -96,21 +96,21 @@ export default function Header() {
           )}
 
           {/* Lock / Unlock */}
-          {!isLocked ? (
+          {ENABLE_MANAGER_VIEW && !isLocked ? (
             <button
               onClick={openLockModal}
               className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white transition-all"
             >
               🔒 Blocca
             </button>
-          ) : (
+          ) : ENABLE_MANAGER_VIEW ? (
             <button
               onClick={openUnlockModal}
               className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-700 hover:bg-slate-600 text-slate-300 transition-all"
             >
               🔓 Sblocca
             </button>
-          )}
+          ) : null}
 
           {/* Indicatore cloud */}
           <div className={`w-2 h-2 rounded-full ${isCloudEnabled ? 'bg-emerald-500' : 'bg-rose-500'}`} title={isCloudEnabled ? 'Cloud connesso' : 'Offline'} />
